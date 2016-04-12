@@ -1,4 +1,4 @@
-code    argc
+code,   argc
 PUSH,   1
 POP,    0
 LOAD,   1
