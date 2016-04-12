@@ -1,0 +1,51 @@
+fun1(a, b):
+    push a
+    push b
+    add
+    call fun2
+    ret
+
+fun2(x):
+    push x
+    push x
+    mul
+    ret
+
+main():
+    push 4
+    push 6
+    call fun1
+
+// (4+6)*(4+6)
+
+
+
+
+int r = 0;
+for (int i = 0; i < 10; ++r) {
+    r += i;
+}
+
+main():
+    push 0
+    push 0
+
+loop:
+    push 10
+    load 1
+    lt
+    jmpz end
+
+    load 0
+    load 1
+    add
+    store 0
+
+    load 1
+    inc
+    store 1
+    jmp loop
+
+end:
+    pop
+    halt
