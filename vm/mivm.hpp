@@ -22,7 +22,13 @@ public:
     void load(const std::initializer_list<arch_t>& programData);
     arch_t run();
 
-    const std::vector<arch_t>& getStack() const;
+#ifdef BOOST_TEST_MODULE
+    const std::vector<arch_t> getStack() const {
+        auto s = stack;
+        s.resize(stackPtr);
+        return s;
+    }
+#endif
 
 private:
     void push(const arch_t value);

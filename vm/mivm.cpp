@@ -22,8 +22,9 @@ arch_t MiVM::run()
         throw std::runtime_error("program not loaded");
     }
 
-    framePtr = 0;
+    framePtr = stackPtr = 0;
     uarch_t instructionPtr = 0;
+    stack.resize(MAX_MEM);
 
     while (true) {
         //TODO: this looks stupid
@@ -61,7 +62,14 @@ arch_t MiVM::run()
 
 #define OPC_EQ   OPC(push(pop() == pop()), OPC_IP_INC)
 #define OPC_LT   OPC(push(pop()  < pop()), OPC_IP_INC)
+
+//#define OPC_CALL OPC(push(framePtr); push(instructionPtr); framePtr = stack.size(), OPC_ARG(1))
+//#define OPC_RET  OPC(tmp = pop(); , 0)
+
 #define OPC_HALT OPC(return pop(), 0)
+
+        //arch_t tmp = 0;
+
 
         switch (program[instructionPtr]) {
 #include "mivm.cpp.inc.tmp"
@@ -76,31 +84,33 @@ arch_t MiVM::run()
 void MiVM::push(const arch_t value)
 {
 #ifndef MIVM_NO_OVERFLOW_CHECK
-    if (stack.size() == MAX_MEM) {
+    if (stackPtr == MAX_MEM) {
         throw std::overflow_error("stack overflow");
     }
 #endif
 
 #ifdef MIVM_DEBUG
-    std::cout << "  push@" << stack.size() << ": " << (int)value << std::endl;
+    std::cout << "  push@" << (int)stackPtr << ": " << (int)value << std::endl;
 #endif
-    stack.push_back(value);
+    stack[stackPtr] = value;
+
+    ++stackPtr;
 }
 
 arch_t MiVM::pop()
 {
 #ifndef MIVM_NO_UNDERFLOW_CHECK
-    if (stack.size() == 0) {
+    if (stackPtr == 0) {
         throw std::underflow_error("stack underflow");
     }
 #endif
 
+    --stackPtr;
+
 #ifdef MIVM_DEBUG
-    std::cout << "  pop@" << stack.size()-1 << ": " << (int)stack.back() << std::endl;
+    std::cout << "  pop@" << (int)stackPtr << ": " << (int)stack[stackPtr] << std::endl;
 #endif
-    const auto r = stack.back();
-    stack.pop_back();
-    return r;
+    return stack[stackPtr];
 }
 
 void MiVM::store(const uarch_t delta)
@@ -115,17 +125,12 @@ void MiVM::load(const uarch_t delta)
     push(value);
 }
 
-const std::vector<arch_t>& MiVM::getStack() const
-{
-    return stack;
-}
-
 #ifdef MIVM_DEBUG
 void MiVM::dumpStack() const
 {
     std::cout << '[';
-    for (const auto& e : stack) {
-        std::cout << (int)e << ", ";
+    for (auto i = 0; i < stackPtr; ++i) {
+        std::cout << (int)stack[i] << ", ";
     }
     std::cout << "]" << std::endl;
 }

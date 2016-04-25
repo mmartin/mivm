@@ -1,20 +1,20 @@
-#include<mivm.hpp>
-
-
 #define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MAIN
 
 #define BOOST_TEST_MODULE BASIC_OPCODES
 #include<boost/test/unit_test.hpp>
 
+#include<mivm.hpp>
+
 using namespace MiVM;
 
 struct MiVMFixture {
     MiVM::MiVM vm;
 
-    void checkStack(const std::vector<arch_t>& stack) const {
-        BOOST_CHECK_EQUAL_COLLECTIONS(std::begin(vm.getStack()), std::end(vm.getStack()),
-                                      std::begin(stack), std::end(stack));
+    void checkStack(const std::vector<arch_t>& s2) const {
+        const auto s1 = vm.getStack();
+        BOOST_CHECK_EQUAL_COLLECTIONS(std::begin(s1), std::end(s1),
+                                      std::begin(s2), std::end(s2));
     }
 };
 
