@@ -1,0 +1,16 @@
+fun test1(a, b):
+    push .a
+    push .b
+    add
+    push 2
+    mul
+    ret
+
+fun main():
+    push 0
+    push 1
+    jmp .bump
+    push 8
+
+bump:
+    call .test1
