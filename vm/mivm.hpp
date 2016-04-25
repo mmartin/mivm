@@ -34,8 +34,8 @@ private:
     void push(const arch_t value);
     arch_t pop();
 
-    void store(const uarch_t delta);
-    void load(const uarch_t delta);
+    void store(const arch_t delta);
+    void load(const arch_t delta);
 
 #ifdef MIVM_DEBUG
     void dumpStack() const;

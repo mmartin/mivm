@@ -13,3 +13,5 @@ JMPZ,   1
 JMPNZ,  1
 LT,     0
 EQ,     0
+CALL,   1
+RET,    1

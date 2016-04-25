@@ -23,18 +23,23 @@ arch_t MiVM::run()
     }
 
     framePtr = stackPtr = 0;
-    uarch_t instructionPtr = 0;
     stack.resize(MAX_MEM);
+
+    uarch_t instructionPtr = 0, argPtr = 0;
+    //arch_t tmp = 0;
 
     while (true) {
         //TODO: this looks stupid
 
-#define OPC_ARG(i) program[instructionPtr+i]
+#define OPC_ARG(i) program[argPtr+i]
 
 #ifdef MIVM_DEBUG
 #define OPC(work, ip) \
         case OPC_CODE: \
-            std::cout << std::endl << "proc@" << (int)instructionPtr << ": " << OPC_NAME; \
+            std::cout << std::endl << "proc (i=" << (int)instructionPtr \
+                                   << ", f="     << (int)framePtr \
+                                   << ", s="     << (int)stackPtr \
+                                   << "): "      << OPC_NAME; \
             for (uarch_t i = 1; i <= OPC_ARGC; ++i) { std::cout << " " << (int)OPC_ARG(i); } \
             std::cout << std::endl; \
             work; instructionPtr = ip; \
@@ -44,7 +49,6 @@ arch_t MiVM::run()
         case OPC_CODE: work; instructionPtr = ip; break;
 #endif
 
-//TODO: maybe move this to opcodes.csv, too?
 #define OPC_PUSH OPC(push(OPC_ARG(1)), OPC_IP_INC)
 #define OPC_POP  OPC(pop(),            OPC_IP_INC)
 
@@ -63,13 +67,13 @@ arch_t MiVM::run()
 #define OPC_EQ   OPC(push(pop() == pop()), OPC_IP_INC)
 #define OPC_LT   OPC(push(pop()  < pop()), OPC_IP_INC)
 
-//#define OPC_CALL OPC(push(framePtr); push(instructionPtr); framePtr = stack.size(), OPC_ARG(1))
-//#define OPC_RET  OPC(tmp = pop(); , 0)
+#define OPC_CALL OPC(push(instructionPtr+2); push(framePtr); framePtr = stackPtr, OPC_ARG(1))
+#define OPC_RET  OPC(stack[framePtr] = pop(); stackPtr = framePtr; framePtr = pop(), \
+                     pop(); stackPtr -= OPC_ARG(1); push(stack[stackPtr + 2 + OPC_ARG(1)]))
 
 #define OPC_HALT OPC(return pop(), 0)
 
-        //arch_t tmp = 0;
-
+        argPtr = instructionPtr;
 
         switch (program[instructionPtr]) {
 #include "mivm.cpp.inc.tmp"
@@ -83,15 +87,16 @@ arch_t MiVM::run()
 
 void MiVM::push(const arch_t value)
 {
+#ifdef MIVM_DEBUG
+    std::cout << "  push@" << (int)stackPtr << ": " << (int)value << std::endl;
+#endif
+
 #ifndef MIVM_NO_OVERFLOW_CHECK
     if (stackPtr == MAX_MEM) {
         throw std::overflow_error("stack overflow");
     }
 #endif
 
-#ifdef MIVM_DEBUG
-    std::cout << "  push@" << (int)stackPtr << ": " << (int)value << std::endl;
-#endif
     stack[stackPtr] = value;
 
     ++stackPtr;
@@ -99,6 +104,10 @@ void MiVM::push(const arch_t value)
 
 arch_t MiVM::pop()
 {
+#ifdef MIVM_DEBUG
+    std::cout << "  pop@" << (int)stackPtr-1 << ": ";
+#endif
+
 #ifndef MIVM_NO_UNDERFLOW_CHECK
     if (stackPtr == 0) {
         throw std::underflow_error("stack underflow");
@@ -108,18 +117,19 @@ arch_t MiVM::pop()
     --stackPtr;
 
 #ifdef MIVM_DEBUG
-    std::cout << "  pop@" << (int)stackPtr << ": " << (int)stack[stackPtr] << std::endl;
+    std::cout << (int)stack[stackPtr] << std::endl;
 #endif
+
     return stack[stackPtr];
 }
 
-void MiVM::store(const uarch_t delta)
+void MiVM::store(const arch_t delta)
 {
     const auto value = pop();
     stack[framePtr+delta] = value;
 }
 
-void MiVM::load(const uarch_t delta)
+void MiVM::load(const arch_t delta)
 {
     const auto value = stack[framePtr+delta];
     push(value);

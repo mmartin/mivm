@@ -88,6 +88,28 @@ BOOST_FIXTURE_TEST_CASE(opc_load_store, MiVMFixture)
     checkStack({ 1 });
 }
 
+BOOST_FIXTURE_TEST_CASE(opc_call_ret, MiVMFixture)
+{
+    vm.load({ OPCode::CALL, 3, OPCode::HALT
+            , OPCode::PUSH, 1, OPCode::PUSH, 2, OPCode::ADD, OPCode::RET, 0
+            });
+    BOOST_CHECK_EQUAL(vm.run(), 3);
+    checkStack({});
+
+    vm.load({ OPCode::PUSH, 1, OPCode::CALL, 5, OPCode::HALT
+            , OPCode::LOAD, -3, OPCode::PUSH, 2, OPCode::ADD, OPCode::RET, 1
+            });
+    BOOST_CHECK_EQUAL(vm.run(), 3);
+    checkStack({});
+
+    vm.load({ OPCode::PUSH, 13, OPCode::PUSH, 3, OPCode::CALL, 7, OPCode::HALT
+            , OPCode::LOAD, -3, OPCode::LOAD, -3
+            , OPCode::JMPZ, 16, OPCode::DEC, OPCode::CALL, 7, OPCode::RET, 1
+            });
+    BOOST_CHECK_EQUAL(vm.run(), 0);
+    checkStack({13});
+}
+
 BOOST_FIXTURE_TEST_CASE(stack_overflow, MiVMFixture)
 {
     /*if (sizeof(arch_t) <= 2) {
