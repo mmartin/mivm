@@ -7,9 +7,9 @@ HALT,   0
 ADD,    0
 MUL,    0
 INC,    0
-DEC,    1
+DEC,    0
 JMP,    1
 JMPZ,   1
-JMPNZ,  0
+JMPNZ,  1
 LT,     0
 EQ,     0

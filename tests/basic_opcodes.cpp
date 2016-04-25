@@ -44,11 +44,38 @@ BOOST_FIXTURE_TEST_CASE(opc_push, MiVMFixture)
     checkStack({ 1 });
 }
 
+BOOST_FIXTURE_TEST_CASE(opc_inc_dev, MiVMFixture)
+{
+    vm.load({ OPCode::PUSH, 13, OPCode::INC, OPCode::HALT });
+    BOOST_CHECK_EQUAL(vm.run(), 14);
+    checkStack({});
+
+    vm.load({ OPCode::PUSH, 13, OPCode::DEC, OPCode::HALT });
+    BOOST_CHECK_EQUAL(vm.run(), 12);
+    checkStack({});
+}
+
 BOOST_FIXTURE_TEST_CASE(opc_jmp, MiVMFixture)
 {
     vm.load({ OPCode::JMP, 3, -13, OPCode::PUSH, 1, OPCode::HALT });
     BOOST_CHECK_EQUAL(vm.run(), 1);
     checkStack({});
+
+    vm.load({ OPCode::PUSH, 0, OPCode::JMPZ, 6, OPCode::PUSH, 1, OPCode::PUSH, 2, OPCode::HALT });
+    BOOST_CHECK_EQUAL(vm.run(), 2);
+    checkStack({});
+
+    vm.load({ OPCode::PUSH, 1, OPCode::JMPZ, 6, OPCode::PUSH, 1, OPCode::PUSH, 2, OPCode::HALT });
+    BOOST_CHECK_EQUAL(vm.run(), 2);
+    checkStack({ 1 });
+
+    vm.load({ OPCode::PUSH, 1, OPCode::JMPNZ, 6, OPCode::PUSH, 1, OPCode::PUSH, 2, OPCode::HALT });
+    BOOST_CHECK_EQUAL(vm.run(), 2);
+    checkStack({});
+
+    vm.load({ OPCode::PUSH, 0, OPCode::JMPNZ, 6, OPCode::PUSH, 1, OPCode::PUSH, 2, OPCode::HALT });
+    BOOST_CHECK_EQUAL(vm.run(), 2);
+    checkStack({ 1 });
 }
 
 BOOST_FIXTURE_TEST_CASE(opc_load_store, MiVMFixture)
