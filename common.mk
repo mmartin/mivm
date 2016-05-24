@@ -1,6 +1,6 @@
 CPP:=g++
-CFLAGS:=-std=c++11 -Wall -Werror -Wextra
-#CFLAGS+=-g -DMIVM_DEBUG
+CFLAGS:=-std=c++11 -Wall -Werror #-Wextra
+CFLAGS+=-g -DMIVM_DEBUG
 
 BUILD=$(CPP) $(CFLAGS) -c $< -o $@
 LINK_STATIC=ar rcs $@ $^

@@ -30,6 +30,5 @@ int main()
     std::cout << sizeof(MiVM::MiVM) << std::endl;
 
     MiVM::MiVM vm;
-    std::cout << "result: " << (int)vm.run() << std::endl;
-
+    vm.run();
 }
