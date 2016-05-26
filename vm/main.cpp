@@ -29,6 +29,6 @@ int main()
 
     std::cout << sizeof(MiVM::MiVM) << std::endl;
 
-    MiVM::MiVM vm;
+    MiVM::MiVM vm(0, 0);
     vm.run();
 }

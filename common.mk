@@ -1,5 +1,5 @@
 CPP:=g++
-CFLAGS:=-std=c++11 -Wall -Werror #-Wextra
+CFLAGS:=-std=c++14 -Wall -Werror #-Wextra
 CFLAGS+=-g -DMIVM_DEBUG
 
 BUILD=$(CPP) $(CFLAGS) -c $< -o $@
