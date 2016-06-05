@@ -25,6 +25,7 @@ enum OPCode { CLS  = 0x00E0 // 0E0
             , LD   = 0x6000 // xkk Vx, byte
             , LDR  = 0x8000 // xy0 Vx, Vy
             , LDI  = 0xA000 // nnn I, addr
+            , INCI = 0xF01E // x1E I, Vx
 
             , OR   = 0x8001 // xy1 Vx, Vy
             , AND  = 0x8002 // xy2 Vx, Vy
@@ -36,57 +37,78 @@ enum OPCode { CLS  = 0x00E0 // 0E0
             , SUBN = 0x8007 // xy7 Vx, Vy
             , INC  = 0x7000 // xkk Vx, byte
 
+            , SKP  = 0xE09E // x9E Vx
+            , SNKP = 0xE0A1 // xA1 Vx
+            , WKP  = 0xF00A // x0A Vx, K
+
+            , GDT  = 0xF007 // x07 Vx, DT
+            , SDT  = 0xF015 // x15 DT, Vx
+            , SST  = 0xF018 // x18 ST, Vx
+
+            , CHR  = 0xF029 // x29 F, Vx
             , RND  = 0xC000 // xkk Vx, byte
 
             // not implemented yet
             //, DRW  = 0xD000 // xyn Vx, Vy, nibble
             //
-            //, SKP  = 0xE09E // x9E Vx
-            //, SKNP = 0xE0A1 // xA1 Vx
-            //
-            //, GKP   = 0xF00A // x0A Vx, K
-            //
-            //, GDT   = 0xF007 // x07 Vx, DT
-            //, SDT   = 0xF015 // x15 DT, Vx
-            //, SST   = 0xF018 // x18 ST, Vx
-            //
-            //, INCI  = 0xF01E // x1E I, Vx
-            //
-            //, CHR   = 0xF029 // x29 F, Vx
-            //, LDID   = 0xF033 // x33 B, Vx
-            //, LDIR   = 0xF055 // x55 [I], Vx
-            //, LDIS   = 0xF065 // x65 Vx, [I]
+            , LDID = 0xF033 // x33 B, Vx
+            , LDIS = 0xF055 // x55 [I], Vx
+            , LDIR = 0xF065 // x65 Vx, [I]
             , EXIT = 0x00FD
             };
 
+enum class State { Inactive
+                 , Ready
+                 , Running
+                 , WaitingKeyboard
+                 , GetKeyboard
+                 , Finished
+                 };
+
+
 class MiVM {
 public:
-    MiVM(const int width, const int height);
+    MiVM() : state(State::Inactive) {}
 
     void load(const std::string& inputFile);
     void load(const std::initializer_list<uint16_t>& program);
-    void run();
+    void reset(const bool soft = true);
+
+    State run(const bool step = false);
+    State getState() const;
+
+    State setWaitingKeyboard(const uint16_t key);
+
+    uint16_t getGetKeyboard() const;
+    State setGetKeyboard(const bool pressed);
 
 #ifdef MIVM_DEBUG
     void dumpStack() const;
-    void dumpRegV() const;
     void dumpMemory() const;
+    void dumpRegisters() const;
 #endif
 
 private:
-    bool execute(const OPCode opcode);
+    State execute(const OPCode opcode);
 
 
 #ifdef BOOST_TEST_MODULE
 public:
 #endif
     std::array<uint8_t, 1024> memory;
-    std::vector<bool> videoMemory;
     std::array<uint8_t, 16> regV;
     uint16_t regI, instrPtr;
 
     std::stack<uint16_t> stack;
+
+    uint16_t delayTimer, soundTimer;
+
+    State state;
+    OPCode lastOpcode;
+    uint16_t tmpReg; // used between states
 };
 
 }
+
+namespace std { string to_string(const MiVM::State& state); }
 #endif

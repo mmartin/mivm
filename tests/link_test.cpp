@@ -4,7 +4,7 @@
 #include<mivm.hpp>
 
 int main() {
-    MiVM::MiVM vm(0, 0);
+    MiVM::MiVM vm;
     vm.load({ MiVM::OPCode::EXIT });
     vm.run();
 }

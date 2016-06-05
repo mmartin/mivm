@@ -1,6 +1,6 @@
 include common.mk
 
-all: mivm mivm-ir
+all: mivm #mivm-ir
 
 mivm-ir:
 	$(MAKE) -C ir
