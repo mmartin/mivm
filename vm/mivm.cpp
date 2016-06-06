@@ -1,8 +1,12 @@
 #include<stdexcept>
 #include<vector>
 #include<iostream>
+#include<fstream>
 #include<iomanip>
 #include<iterator>
+
+#include<cerrno>
+#include<cstring>
 
 #include"mivm.hpp"
 
@@ -29,14 +33,34 @@ static const uint16_t font[] = { 0xF0, 0x90, 0x90, 0x90, 0xF0 // 0
 void MiVM::load(const std::string& inputFile)
 {
     reset(false);
-    std::cout <<inputFile << std::endl;
-    throw std::runtime_error("not implemented");
+    std::copy(std::begin(font), std::end(font), std::begin(memory));
+
+    std::ifstream f(inputFile, std::ios::binary | std::ios::ate);
+
+    if (!f) {
+        throw std::runtime_error(std::string("Cannot open file: ") + strerror(errno));
+    }
+
+    const auto fileSize = f.tellg();
+
+    if (memory.size() - fileSize < 0x200) {
+        throw std::runtime_error("File too big: " + std::to_string(fileSize) +
+                                 " (max " + std::to_string(memory.size() - 0x200) + ")");
+    }
+
+    f.seekg(std::ios::beg);
+    std::copy(std::istreambuf_iterator<char>(f),
+              std::istreambuf_iterator<char>(),
+              std::begin(memory) + 0x200);
+
+    f.close();
+
+    state = State::Ready;
 }
 
 void MiVM::load(const std::initializer_list<uint16_t>& program)
 {
     reset(false);
-
     std::copy(std::begin(font), std::end(font), std::begin(memory));
 
     uint16_t tmp = 0x200;
@@ -50,9 +74,16 @@ void MiVM::load(const std::initializer_list<uint16_t>& program)
 
 void MiVM::reset(const bool soft)
 {
-    if (!soft) {
+    if (!soft) { // TODO: solution for memory clearing without erasing program?
         memory.fill(0);
     }
+
+    for (auto& row : videoMemory) {
+        row.fill(false);
+    }
+
+    videoMemory[16][32] = true;
+
     regV.fill(0);
     regI = 0;
     stack = decltype(stack)();
@@ -81,6 +112,7 @@ State MiVM::run(const bool step)
         dumpStack();
         dumpRegisters();
 #endif
+
         state = execute(opcode);
 
 #ifdef MIVM_DEBUG
@@ -137,7 +169,6 @@ State MiVM::execute(const OPCode opcode)
 {
     lastOpcode = opcode;
 
-    uint16_t tmp16;
 #define NIBBLE(position) ((opcode >> 4*position) & 0xF)
 #define BYTE(position) ((opcode >> 8*position) & 0xFF)
 #define ADDR (opcode & 0xFFF)
@@ -237,6 +268,15 @@ State MiVM::execute(const OPCode opcode)
                   instrPtr += 2;
                   break;
 
+        case 0xD: {
+                      std::cout << std::hex << opcode <<std::endl;
+                      for (uint16_t i = 0; i < NIBBLE(0); ++i) {
+
+                      }
+
+                  }
+                  break;
+
         case 0xE:
             switch (opcode & 0xFF) {
                 case 0x9E:
@@ -269,11 +309,13 @@ State MiVM::execute(const OPCode opcode)
                 case 0x29: regI = 5 * regV[NIBBLE(2)];
                            break;
 
-                case 0x33: tmp16 = regV[NIBBLE(2)]; // TODO: is this correct ?
+                case 0x33: {
+                               uint16_t tmp = regV[NIBBLE(2)]; // TODO: is this correct ?
 
-                           for (auto i = 0; i < 3; ++i) {
-                               memory[regI + (2-i)] = tmp16 % 10;
-                               tmp16 /= 10;
+                               for (auto i = 0; i < 3; ++i) {
+                                   memory[regI + (2-i)] = tmp % 10;
+                                   tmp /= 10;
+                               }
                            }
                            break;
 

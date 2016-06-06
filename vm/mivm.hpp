@@ -65,7 +65,6 @@ enum class State { Inactive
                  , Finished
                  };
 
-
 class MiVM {
 public:
     MiVM() : state(State::Inactive) {}
@@ -96,6 +95,7 @@ private:
 public:
 #endif
     std::array<uint8_t, 1024> memory;
+    std::array<std::array<bool, 64>, 32> videoMemory;
     std::array<uint8_t, 16> regV;
     uint16_t regI, instrPtr;
 

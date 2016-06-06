@@ -51,14 +51,21 @@ int main()
         return 1;
     }*/
 
-    sf::RenderWindow window(sf::VideoMode(200, 200), "MiVM!");
 
     MiVM::MiVM vm;
 
-    vm.load({ MiVM::OPCode::WKP, MiVM::OPCode::EXIT });
+    try {
+        //vm.load("/home/martins/tmp/MAZE");
+        vm.load("test.c8");
+    }
+    catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        return -1;
+    }
+
+    sf::RenderWindow window(sf::VideoMode(64, 32), "MiVM!");
 
     auto state = vm.getState();
-
     while (state != MiVM::State::Finished && window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -87,7 +94,23 @@ int main()
             default: break;
         }
 
-        window.clear();
+
+        window.clear(sf::Color::Black);
+
+        /*for (size_t row = 0; row < 32; ++row) {
+          for (size_t column = 0; column < 64; ++column) {
+          }
+          }*/
+
+        sf::VertexArray p(sf::Quads, 4);
+
+        p[0].position = sf::Vector2f(31, 15);
+        p[1].position = sf::Vector2f(33, 15);
+        p[2].position = sf::Vector2f(33, 17);
+        p[3].position = sf::Vector2f(31, 17);
+
+        window.draw(p);
+
         window.display();
     }
 }
