@@ -411,7 +411,7 @@ BOOST_FIXTURE_TEST_CASE(test_timers, MiVMFixture)
     vm.run();
     BOOST_CHECK_EQUAL_U(vm.regV[0], 0x13);
     BOOST_CHECK_EQUAL_U(vm.regV[1], 0x13);
-    BOOST_CHECK_EQUAL_U(vm.delayTimer, 0x13);
+    BOOST_CHECK_EQUAL_U(vm.delayTimer.get(), 0x13);
     checkResult({});
 
     vm.load({ OPC::LD | 0x013
@@ -420,6 +420,34 @@ BOOST_FIXTURE_TEST_CASE(test_timers, MiVMFixture)
             });
     vm.run();
     BOOST_CHECK_EQUAL_U(vm.regV[0], 0x13);
-    BOOST_CHECK_EQUAL_U(vm.soundTimer, 0x13);
+    BOOST_CHECK_EQUAL_U(vm.soundTimer.get(), 0x13);
     checkResult({});
+
+    // TODO: tests for timers itself
+}
+
+BOOST_FIXTURE_TEST_CASE(test_video, MiVMFixture)
+{
+    //vm.load({ OPC::LD | 0x03F
+            //, OPC::LD | 0x11F
+            //, OPC::DRW | 0x015
+            //, OPC::EXIT
+            //});
+    //vm.run();
+
+    vm.load({ OPC::DRW | 0x5
+            , OPC::DRW | 0x5
+            , OPC::EXIT
+            });
+    vm.run();
+    checkResult({}, MiVM::State::DrawRequest);
+    vm.setDrawRequest();
+    vm.run();
+    checkResult({}, MiVM::State::DrawRequest);
+    vm.setDrawRequest();
+    vm.run();
+    checkResult({});
+    BOOST_CHECK_EQUAL_U(vm.regV[0xF], 1);
+
+    // TODO: write real tests
 }

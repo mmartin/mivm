@@ -20,7 +20,7 @@ mivm.o: main.cpp mivm.hpp
 	$(BUILD)
 
 mivm: mivm.o |libmivm.so
-	$(CPP) -o $@ $^ -L . -lmivm -lsfml-graphics -lsfml-window -lsfml-system #-lboost_program_options
+	$(CPP) -o $@ $^ -L . -lmivm -lsfml-audio -lsfml-graphics -lsfml-window -lsfml-system -lboost_program_options
 
 clean:
 	rm -f *.o *.a *.so mivm

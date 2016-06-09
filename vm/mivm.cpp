@@ -82,8 +82,6 @@ void MiVM::reset(const bool soft)
         row.fill(false);
     }
 
-    videoMemory[16][32] = true;
-
     regV.fill(0);
     regI = 0;
     stack = decltype(stack)();
@@ -94,14 +92,14 @@ void MiVM::reset(const bool soft)
     }
 }
 
-State MiVM::run(const bool step)
+State MiVM::run(const size_t cycles)
 {
     if (state != State::Ready && state != State::Running) {
         throw std::runtime_error("Not in Ready or Running state: " + std::to_string(state));
     }
 
     OPCode opcode;
-    do {
+    for (size_t i = 0; cycles == 0 || i < cycles; ++i) {
         opcode = OPCode(uint16_t(memory[instrPtr] << 8) |
                         uint16_t(memory[instrPtr+1]));
 
@@ -115,16 +113,20 @@ State MiVM::run(const bool step)
 
         state = execute(opcode);
 
+        delayTimer.update();
+
+        if (soundTimer.update()) { // sync for the sound
+            return state;
+        }
+
 #ifdef MIVM_DEBUG
         std::cout << " -> " << std::to_string(state) << std::endl;
 #endif
-    } while (state == State::Running && !step);
+        if (state != State::Running) {
+            break;
+        }
+    }
 
-    return state;
-}
-
-State MiVM::getState() const
-{
     return state;
 }
 
@@ -165,6 +167,17 @@ State MiVM::setGetKeyboard(const bool pressed)
     return state;
 }
 
+State MiVM::setDrawRequest()
+{
+    if (state != State::DrawRequest) {
+        throw std::runtime_error("Not in DrawRequest state: " + std::to_string(state));
+    }
+
+    instrPtr += 2;
+    state = State::Running;
+    return state;
+}
+
 State MiVM::execute(const OPCode opcode)
 {
     lastOpcode = opcode;
@@ -182,7 +195,10 @@ State MiVM::execute(const OPCode opcode)
                             stack.pop();
                             break;
 
-                case 0x0E0: //std::fill(videoMemory.begin(), videoMemory.end(), 0);
+                case 0x0E0: for (auto& row : videoMemory) {
+                                row.fill(0);
+                            }
+                            instrPtr += 2;
                             break;
 
                 default:
@@ -269,13 +285,28 @@ State MiVM::execute(const OPCode opcode)
                   break;
 
         case 0xD: {
-                      std::cout << std::hex << opcode <<std::endl;
-                      for (uint16_t i = 0; i < NIBBLE(0); ++i) {
+                      regV[0xF] = 0;
+                      uint8_t y = regV[NIBBLE(1)];
 
+                      for (uint16_t i = 0; i < NIBBLE(0); ++i) {
+                          uint8_t x = regV[NIBBLE(2)];
+                          uint8_t v = memory[regI + i];
+
+                          for (uint8_t m = 128; m > 0; m /= 2) {
+                              if (videoMemory[y][x] && v & m) {
+                                  regV[0xF] = 1;
+                              }
+
+                              videoMemory[y][x] ^= bool(v & m);
+
+                              x = (x == 63 ? 0 : x + 1);
+                          }
+
+                          y = (y == 31 ? 0 : y + 1);
                       }
 
                   }
-                  break;
+                  return State::DrawRequest;
 
         case 0xE:
             switch (opcode & 0xFF) {
@@ -291,17 +322,18 @@ State MiVM::execute(const OPCode opcode)
 
         case 0xF:
             switch (opcode & 0xFF) {
-                case 0x07: regV[NIBBLE(2)] = delayTimer;
+                case 0x07: regV[NIBBLE(2)] = delayTimer.get();
                            break;
 
                 case 0x0A: tmpReg = NIBBLE(2);
                            return State::WaitingKeyboard;
 
-                case 0x15: delayTimer = regV[NIBBLE(2)];
+                case 0x15: delayTimer.set(regV[NIBBLE(2)]);
                            break;
 
-                case 0x18: soundTimer = regV[NIBBLE(2)];
-                           break;
+                case 0x18: soundTimer.set(regV[NIBBLE(2)]);
+                           instrPtr += 2;
+                           return state; // sync for sound
 
                 case 0x1E: regI += regV[NIBBLE(2)];
                            break;
@@ -343,6 +375,27 @@ State MiVM::execute(const OPCode opcode)
 #undef BYTE
 #undef ADDR
 }
+
+auto MiVM::getState() const -> decltype(state)
+{
+    return state;
+}
+
+auto MiVM::getVideoMemory() const -> const decltype(videoMemory)&
+{
+    return videoMemory;
+}
+
+auto MiVM::getSoundTimer() const -> decltype(soundTimer)
+{
+    return soundTimer;
+}
+
+bool MiVM::getSound() const
+{
+    return soundTimer.get() > 0;
+}
+
 
 #ifdef MIVM_DEBUG
 
@@ -387,6 +440,16 @@ void MiVM::dumpMemory() const
 {
     dumpContainer(memory, true);
 }
+
+void MiVM::dumpVideoMemory() const
+{
+    for (const auto& row : videoMemory) {
+        for (const auto& pixel : row) {
+            std::cout << (pixel ? '*' : ' ');
+        }
+        std::cout << std::endl;
+    }
+}
 #endif
 
 }
@@ -398,6 +461,7 @@ namespace std { string to_string(const MiVM::State& state)
         case MiVM::State::Inactive: return "Inactive";
         case MiVM::State::Ready:    return "Ready";
         case MiVM::State::Running:  return "Running";
+        case MiVM::State::DrawRequest:     return "DrawRequest";
         case MiVM::State::WaitingKeyboard: return "WaitingKeyboard";
         case MiVM::State::GetKeyboard:     return "GetKeyboard";
         case MiVM::State::Finished:        return "Finished";
