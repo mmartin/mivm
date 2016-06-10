@@ -288,23 +288,22 @@ State MiVM::execute(const OPCode opcode)
                       regV[0xF] = 0;
                       uint8_t y = regV[NIBBLE(1)];
 
-                      for (uint16_t i = 0; i < NIBBLE(0); ++i) {
-                          uint8_t x = regV[NIBBLE(2)];
+                      for (uint16_t i = 0; i < NIBBLE(0); ++i, ++y) {
+                          y %= 32;
+
+                          uint8_t x = regV[NIBBLE(2)] % 64;
                           uint8_t v = memory[regI + i];
 
-                          for (uint8_t m = 128; m > 0; m /= 2) {
+                          for (uint8_t m = 128; m > 0; m /= 2, ++x) {
+                              x %= 64;
+
                               if (videoMemory[y][x] && v & m) {
                                   regV[0xF] = 1;
                               }
 
                               videoMemory[y][x] ^= bool(v & m);
-
-                              x = (x == 63 ? 0 : x + 1);
                           }
-
-                          y = (y == 31 ? 0 : y + 1);
                       }
-
                   }
                   return State::DrawRequest;
 
