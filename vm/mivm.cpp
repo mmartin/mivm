@@ -115,7 +115,8 @@ State MiVM::run(const size_t cycles)
 
         delayTimer.update();
 
-        if (soundTimer.update()) { // sync for the sound
+        if (soundTimer.update()) {
+            state = State::SoundStop;
             return state;
         }
 
@@ -174,6 +175,22 @@ State MiVM::setDrawRequest()
     }
 
     instrPtr += 2;
+    state = State::Running;
+    return state;
+}
+
+State MiVM::setSoundStart() {
+    if (state != State::SoundStart) {
+        throw std::runtime_error("Not in SoundStart state: " + std::to_string(state));
+    }
+    state = State::Running;
+    return state;
+}
+
+State MiVM::setSoundStop() {
+    if (state != State::SoundStop) {
+        throw std::runtime_error("Not in SoundStop state: " + std::to_string(state));
+    }
     state = State::Running;
     return state;
 }
@@ -332,7 +349,9 @@ State MiVM::execute(const OPCode opcode)
 
                 case 0x18: soundTimer.set(regV[NIBBLE(2)]);
                            instrPtr += 2;
-                           return state; // sync for sound
+                           // this could be used to either start or stop sound
+                           state = (soundTimer.get() ? State::SoundStart : State::SoundStop);
+                           return state;
 
                 case 0x1E: regI += regV[NIBBLE(2)];
                            break;
@@ -384,17 +403,6 @@ auto MiVM::getVideoMemory() const -> const decltype(videoMemory)&
 {
     return videoMemory;
 }
-
-auto MiVM::getSoundTimer() const -> decltype(soundTimer)
-{
-    return soundTimer;
-}
-
-bool MiVM::getSound() const
-{
-    return soundTimer.get() > 0;
-}
-
 
 #ifdef MIVM_DEBUG
 
@@ -461,6 +469,8 @@ namespace std { string to_string(const MiVM::State& state)
         case MiVM::State::Ready:    return "Ready";
         case MiVM::State::Running:  return "Running";
         case MiVM::State::DrawRequest:     return "DrawRequest";
+        case MiVM::State::SoundStart:      return "SoundStart";
+        case MiVM::State::SoundStop:       return "SoundStop";
         case MiVM::State::WaitingKeyboard: return "WaitingKeyboard";
         case MiVM::State::GetKeyboard:     return "GetKeyboard";
         case MiVM::State::Finished:        return "Finished";

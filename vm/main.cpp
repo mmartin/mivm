@@ -112,6 +112,16 @@ int main(int argc, const char* argv[])
                 state = vm.setDrawRequest();
                 break;
 
+            case MiVM::State::SoundStart:
+                sound.play();
+                state = vm.setSoundStart();
+                break;
+
+            case MiVM::State::SoundStop:
+                sound.stop();
+                state = vm.setSoundStop();
+                break;
+
             case MiVM::State::GetKeyboard:
                 state = vm.setGetKeyboard(sf::Keyboard::isKeyPressed(keys[vm.getGetKeyboard()]));
                 break;
@@ -134,15 +144,6 @@ int main(int argc, const char* argv[])
                 p[3].position = sf::Vector2f(x*pixelSize, (y+1)*pixelSize);
                 window.draw(p);
             }
-        }
-
-        if (vm.getSound()) {
-            if (sound.getStatus() != sf::Sound::Status::Playing) {
-                sound.play();
-            }
-        }
-        else {
-            sound.stop();
         }
 
         window.display();

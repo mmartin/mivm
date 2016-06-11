@@ -60,6 +60,8 @@ enum class State { Inactive
                  , Ready
                  , Running
                  , DrawRequest
+                 , SoundStart
+                 , SoundStop
                  , WaitingKeyboard
                  , GetKeyboard
                  , Finished
@@ -117,6 +119,8 @@ public:
     uint16_t getGetKeyboard() const;
     State setGetKeyboard(const bool pressed);
     State setDrawRequest();
+    State setSoundStart();
+    State setSoundStop();
 
 #ifdef MIVM_DEBUG
     void dumpStack() const;
@@ -148,9 +152,6 @@ public:
 public:
     auto getState() const -> decltype(state);
     auto getVideoMemory() const -> const decltype(videoMemory)&;
-    auto getSoundTimer() const -> decltype(soundTimer);
-
-    bool getSound() const;
 };
 
 }
